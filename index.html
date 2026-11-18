@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CGPA Calculator — UGC Grading Scale</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0f172a; color:#e2e8f0; min-height:100vh; padding:28px 16px 60px; }
+  .wrap { max-width:760px; margin:0 auto; }
+  h1 { text-align:center; font-size:30px; }
+  h1 span { color:#38bdf8; }
+  .sub { text-align:center; color:#94a3b8; margin:8px 0 26px; font-size:15px; }
+  .card { background:#1e293b; border:1px solid #334155; border-radius:14px; padding:20px; margin-bottom:18px; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; color:#94a3b8; font-size:13px; padding:6px 6px; }
+  td { padding:5px 6px; }
+  input, select { width:100%; background:#0f172a; border:1px solid #334155; color:#e2e8f0; border-radius:8px; padding:9px 10px; font-size:14.5px; }
+  input:focus, select:focus { outline:2px solid #38bdf8; }
+  .del { background:#7f1d1d; color:#fecaca; border:none; border-radius:8px; width:34px; height:36px; cursor:pointer; font-size:15px; }
+  .row-btns { display:flex; gap:10px; margin-top:14px; }
+  button.main { flex:1; padding:12px; border:none; border-radius:10px; font-size:15.5px; font-weight:700; cursor:pointer; }
+  .add { background:#334155; color:#e2e8f0; }
+  .calc { background:#38bdf8; color:#082f49; }
+  .result { text-align:center; display:none; }
+  .result .gpa { font-size:52px; font-weight:800; color:#38bdf8; }
+  .result .meta { color:#94a3b8; margin-top:4px; }
+  .scale { font-size:13.5px; }
+  .scale td, .scale th { padding:5px 8px; border-bottom:1px solid #334155; }
+  .note { color:#64748b; font-size:13px; text-align:center; margin-top:16px; }
+  @media (max-width:520px){ .hide-sm{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎓 CGPA <span>Calculator</span></h1>
+  <p class="sub">Semester GPA calculator using the standard Bangladesh UGC grading scale — used by Southeast University (SEU) and most universities in Bangladesh.</p>
+
+  <div class="card">
+    <table>
+      <thead><tr><th style="width:38%">Course</th><th style="width:20%">Credits</th><th style="width:32%">Grade</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="row-btns">
+      <button class="main add" onclick="addRow()">＋ Add Course</button>
+      <button class="main calc" onclick="calculate()">Calculate GPA</button>
+    </div>
+  </div>
+
+  <div class="card result" id="result">
+    <div>Your Semester GPA</div>
+    <div class="gpa" id="gpa">0.00</div>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px">Grading Scale (UGC)</h3>
+    <table class="scale">
+      <tr><th>Marks</th><th>Grade</th><th>Point</th><th class="hide-sm">Marks</th><th class="hide-sm">Grade</th><th class="hide-sm">Point</th></tr>
+      <tr><td>80–100</td><td>A+</td><td>4.00</td><td class="hide-sm">55–59</td><td class="hide-sm">B-</td><td class="hide-sm">2.75</td></tr>
+      <tr><td>75–79</td><td>A</td><td>3.75</td><td class="hide-sm">50–54</td><td class="hide-sm">C+</td><td class="hide-sm">2.50</td></tr>
+      <tr><td>70–74</td><td>A-</td><td>3.50</td><td class="hide-sm">45–49</td><td class="hide-sm">C</td><td class="hide-sm">2.25</td></tr>
+      <tr><td>65–69</td><td>B+</td><td>3.25</td><td class="hide-sm">40–44</td><td class="hide-sm">D</td><td class="hide-sm">2.00</td></tr>
+      <tr><td>60–64</td><td>B</td><td>3.00</td><td class="hide-sm">0–39</td><td class="hide-sm">F</td><td class="hide-sm">0.00</td></tr>
+    </table>
+  </div>
+
+  <p class="note">Tip: to get your overall CGPA, enter all courses from every semester — the math is the same.</p>
+</div>
+
+<script>
+  const GRADES = [
+    ['A+', 4.00], ['A', 3.75], ['A-', 3.50], ['B+', 3.25], ['B', 3.00],
+    ['B-', 2.75], ['C+', 2.50], ['C', 2.25], ['D', 2.00], ['F', 0.00]
+  ];
+  const rowsEl = document.getElementById('rows');
+
+  function gradeOptions(selected) {
+    return GRADES.map(([g, p]) => `<option value="${p}" ${g === selected ? 'selected' : ''}>${g} (${p.toFixed(2)})</option>`).join('');
+  }
+  function addRow(course = '', credit = 3, grade = 'A') {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="e.g. CSE 101" value="${course}"></td>
+      <td><input type="number" min="0.5" step="0.5" value="${credit}"></td>
+      <td><select>${gradeOptions(grade)}</select></td>
+      <td><button class="del" title="Remove" onclick="this.closest('tr').remove()">✕</button></td>`;
+    rowsEl.appendChild(tr);
+  }
+  function calculate() {
+    let points = 0, credits = 0, count = 0;
+    rowsEl.querySelectorAll('tr').forEach(tr => {
+      const c = parseFloat(tr.children[1].querySelector('input').value);
+      const p = parseFloat(tr.children[2].querySelector('select').value);
+      if (!isNaN(c) && c > 0) { points += c * p; credits += c; count++; }
+    });
+    const box = document.getElementById('result');
+    if (credits === 0) { box.style.display = 'none'; return; }
+    const gpa = points / credits;
+    document.getElementById('gpa').textContent = gpa.toFixed(2);
+    document.getElementById('meta').textContent = `${count} course(s) · ${credits} total credits`;
+    box.style.display = 'block';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  addRow('CSE 101 — Structured Programming', 3, 'A+');
+  addRow('MAT 101 — Calculus', 3, 'A');
+  addRow('ENG 101 — English', 2, 'A-');
+  addRow('CSE 102 — Programming Lab', 1, 'A+');
+</script>
+</body>
+</html>
